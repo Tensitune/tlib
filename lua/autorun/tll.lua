@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 -----------------------------------------------------------------------------]]
-local version = 20230609
+local version = 20230610
 if TLL and TLL.Version > version then return end
 
 TLL = TLL or {}
@@ -47,7 +47,7 @@ local function initFile(directoryPath, fileName)
     local pathToFile = directoryPath .. "/" .. fileName
 
     if (prefix == "sv" or prefix == "server") and SERVER then
-        TLL.Log("Loading file: ", TLL.Colors.Path, pathToFile)
+        TLL.Log("TLL", "Loading file: ", TLL.Colors.Path, pathToFile)
         include(pathToFile)
     elseif prefix == "cl" or prefix == "client" then
         if SERVER then AddCSLuaFile(pathToFile) end
@@ -55,7 +55,7 @@ local function initFile(directoryPath, fileName)
     else
         if SERVER then
             AddCSLuaFile(pathToFile)
-            TLL.Log("Loading file: ", TLL.Colors.Path, pathToFile)
+            TLL.Log("TLL", "Loading file: ", TLL.Colors.Path, pathToFile)
         end
 
         include(pathToFile)
@@ -64,7 +64,8 @@ end
 
 --- Just a logger.
 --- Accepts many arguments.
-function TLL.Log(...)
+--- @param prefix string @Console message prefix
+function TLL.Log(prefix, ...)
     local args = {...}
     if #args == 0 then return end
 
@@ -76,7 +77,11 @@ function TLL.Log(...)
         args[#args + 1] = "\n"
     end
 
-    MsgC(TLL.Colors.Primary, "[TLL] ", TLL.Colors.White, unpack(args))
+    if prefix and type(prefix) == "string" then
+        MsgC(TLL.Colors.Primary, "[" .. prefix .. "] ", TLL.Colors.White, unpack(args))
+    else
+        MsgC(TLL.Colors.White, unpack(args))
+    end
 end
 
 --- Returns a plural noun.
@@ -234,7 +239,7 @@ function TLL.LoadFile(loadSide, pathToFile)
     local lowerSide = string.lower(loadSide)
 
     if lowerSide == "server" and SERVER then
-        TLL.Log("Loading file: ", TLL.Colors.Path, pathToFile)
+        TLL.Log("TLL", "Loading file: ", TLL.Colors.Path, pathToFile)
         include(path)
     elseif lowerSide == "client" then
         if SERVER then AddCSLuaFile(path) end
@@ -242,7 +247,7 @@ function TLL.LoadFile(loadSide, pathToFile)
     elseif lowerSide == "shared" then
         if SERVER then
             AddCSLuaFile(path)
-            TLL.Log("Loading file: ", TLL.Colors.Path, pathToFile)
+            TLL.Log("TLL", "Loading file: ", TLL.Colors.Path, pathToFile)
         end
 
         include(path)
@@ -261,7 +266,7 @@ function TLL.LoadFiles(loadSide, directoryPath)
         local pathToFile = directoryPath .. "/" .. fileName
 
         if (lowerSide and lowerSide == "server") and SERVER then
-            TLL.Log("Loading file: ", TLL.Colors.Path, pathToFile)
+            TLL.Log("TLL", "Loading file: ", TLL.Colors.Path, pathToFile)
             include(pathToFile)
         elseif (lowerSide and lowerSide == "client") then
             if SERVER then AddCSLuaFile(pathToFile) end
@@ -269,7 +274,7 @@ function TLL.LoadFiles(loadSide, directoryPath)
         elseif (lowerSide and lowerSide == "shared") then
             if SERVER then
                 AddCSLuaFile(pathToFile)
-                TLL.Log("Loading file: ", TLL.Colors.Path, pathToFile)
+                TLL.Log("TLL", "Loading file: ", TLL.Colors.Path, pathToFile)
             end
 
             include(pathToFile)
@@ -287,7 +292,7 @@ function TLL.LoadFiles(loadSide, directoryPath)
             local pathToFile = directoryPath .. "/" .. directory .. "/" .. directoryFile
 
             if ((lowerSide and lowerSide == "server") or (!lowerSide and directory == "server")) and SERVER then
-                TLL.Log("Loading file: ", TLL.Colors.Path, pathToFile)
+                TLL.Log("TLL", "Loading file: ", TLL.Colors.Path, pathToFile)
                 include(pathToFile)
             elseif (lowerSide and lowerSide == "client") or (!lowerSide and directory == "client") then
                 if SERVER then AddCSLuaFile(pathToFile) end
@@ -295,7 +300,7 @@ function TLL.LoadFiles(loadSide, directoryPath)
             elseif (lowerSide and lowerSide == "shared") then
                 if SERVER then
                     AddCSLuaFile(pathToFile)
-                    TLL.Log("Loading file: ", TLL.Colors.Path, pathToFile)
+                    TLL.Log("TLL", "Loading file: ", TLL.Colors.Path, pathToFile)
                 end
 
                 include(pathToFile)
@@ -325,14 +330,14 @@ if SERVER then
                 -- success
                 function(body)
                     if (tonumber(string.Trim(body)) > version) then
-                        TLL.Log(TLL.Colors.Warning, "You are not using the latest version of TLL!")
-                        TLL.Log(TLL.Colors.Warning, "You can find the new version here: ", TLL.Colors.Path, "https://github.com/Tensitune/tll")
+                        TLL.Log("TLL", TLL.Colors.Warning, "You are not using the latest version of TLL!")
+                        TLL.Log("TLL", TLL.Colors.Warning, "You can find the new version here: ", TLL.Colors.Path, "https://github.com/Tensitune/tll")
                     end
                 end,
 
                 -- failure
                 function()
-                    TLL.Log(TLL.Colors.Warning, "Failed to check version")
+                    TLL.Log("TLL", TLL.Colors.Warning, "Failed to check version")
                 end
             )
         end)
