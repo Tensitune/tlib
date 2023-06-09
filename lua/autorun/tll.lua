@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 -----------------------------------------------------------------------------]]
-local version = 20230608
+local version = 20230609
 if TLL and TLL.Version > version then return end
 
 TLL = TLL or {}
@@ -254,7 +254,7 @@ end
 --- @param directoryPath string @Directory path.
 function TLL.LoadFiles(loadSide, directoryPath)
     local lowerSide = loadSide and string.lower(loadSide) or nil
-    local files, directories = file.Find(directoryPath .. "/*.lua", "LUA")
+    local files, directories = file.Find(directoryPath .. "/*", "LUA")
 
     for i = 1, #files do
         local fileName = files[i]
@@ -283,7 +283,7 @@ function TLL.LoadFiles(loadSide, directoryPath)
         local directoryFiles = file.Find(directoryPath .. "/" .. directory .. "/*.lua", "LUA")
 
         for j = 1, #directoryFiles do
-            local directoryFile = directoryFiles[i]
+            local directoryFile = directoryFiles[j]
             local pathToFile = directoryPath .. "/" .. directory .. "/" .. directoryFile
 
             if ((lowerSide and lowerSide == "server") or (!lowerSide and directory == "server")) and SERVER then
