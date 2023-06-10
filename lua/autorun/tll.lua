@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 -----------------------------------------------------------------------------]]
-local version = 20230610
+local version = 20230611
 if tll and tll.version > version then return end
 
 tll = tll or {}
@@ -47,7 +47,7 @@ local function initFile(directoryPath, fileName)
     local pathToFile = directoryPath .. "/" .. fileName
 
     if (prefix == "sv" or prefix == "server") and SERVER then
-        tll.log("TLL", "Loading file: ", tll.colors.path, pathToFile)
+        tll.Log("TLL", "Loading file: ", tll.colors.path, pathToFile)
         include(pathToFile)
     elseif prefix == "cl" or prefix == "client" then
         if SERVER then AddCSLuaFile(pathToFile) end
@@ -55,7 +55,7 @@ local function initFile(directoryPath, fileName)
     else
         if SERVER then
             AddCSLuaFile(pathToFile)
-            tll.log("TLL", "Loading file: ", tll.colors.path, pathToFile)
+            tll.Log("TLL", "Loading file: ", tll.colors.path, pathToFile)
         end
 
         include(pathToFile)
@@ -65,15 +65,15 @@ end
 --- Just a logger.
 --- Accepts many arguments.
 --- @param prefix string @Console message prefix
-function tll.log(prefix, ...)
+function tll.Log(prefix, ...)
     local args = {...}
     if #args == 0 then return end
 
     local lastArg = args[#args]
 
-    if lastArg and type(lastArg) == "string" and string.Right(lastArg, 2) != "\n" then
+    if lastArg and type(lastArg) == "string" and string.Right(lastArg, 2) ~= "\n" then
         args[#args] = lastArg .. "\n"
-    elseif lastArg and type(lastArg) != "string" then
+    elseif lastArg and type(lastArg) ~= "string" then
         args[#args + 1] = "\n"
     end
 
@@ -90,7 +90,7 @@ end
 --- @param two string @A noun for number ending in 2-4.
 --- @param five string @A noun for number ending in 5+.
 --- @return string
-function tll.getNoun(num, one, two, five)
+function tll.GetNoun(num, one, two, five)
     local n = math.abs(num) % 100;
 
     if n >= 5 and n <= 20 then
@@ -121,7 +121,7 @@ end
 --- @param validationTable table @The table to validate.
 --- @param validationString table @String what table we are validating for ErrorNoHalt.
 --- @return boolean @Whether the validation succeeded.
-function tll.checkTableValidation(schema, validationTable, validationString)
+function tll.CheckTableValidation(schema, validationTable, validationString)
     local stackTrace = debug.traceback()
     local stackTraceStr = stackTrace:find("in main chunk")
 
@@ -130,13 +130,13 @@ function tll.checkTableValidation(schema, validationTable, validationString)
 
     local errorText
 
-    if type(schema) != "table" then
+    if type(schema) ~= "table" then
         errorText = "[TLL Error] Schema must be a table! [" .. stackTraceStr .. "]\n"
     end
     if table.Count(schema) == 0 then
         errorText = "[TLL Error] Schema must not be empty! [" .. stackTraceStr .. "]\n"
     end
-    if type(validationTable) != "table" then
+    if type(validationTable) ~= "table" then
         errorText = "[TLL Error] Validation table must be a table! [" .. stackTraceStr .. "]\n"
     end
     if table.Count(validationTable) == 0 then
@@ -168,7 +168,7 @@ function tll.checkTableValidation(schema, validationTable, validationString)
                 local value = schemaValue[i]
                 local schemaType = tll.types[value]
 
-                if !schemaType then
+                if not schemaType then
                     ErrorNoHalt("[TLL Error] Invalid type of '" .. k .. "'! '" .. value .. "' does not exist! [" .. stackTraceStr .. "]\n")
                     return false
                 end
@@ -179,7 +179,7 @@ function tll.checkTableValidation(schema, validationTable, validationString)
             end
         elseif schemaValueType == "string" then
             local schemaType = tll.types[schemaValue]
-            if !schemaType then
+            if not schemaType then
                 ErrorNoHalt("[TLL Error] Invalid type of '" .. k .. "'! '" .. schemaValue .. "' does not exist! [" .. stackTraceStr .. "]\n")
                 return false
             end
@@ -187,7 +187,7 @@ function tll.checkTableValidation(schema, validationTable, validationString)
             schemaTypeIsValid = type(v) == schemaType
         end
 
-        if !schemaTypeIsValid and !(schemaValueIsFunc and schemaValue(validationTable[k])) then
+        if not schemaTypeIsValid and not (schemaValueIsFunc and schemaValue(validationTable[k])) then
             local schemaType = schemaValueType == "table" and "(must be a " .. tll.tableToString(schemaValue) .. ")"
                                     or schemaValueType == "function" and ""
                                     or "(must be a " .. schemaValue .. ")"
@@ -197,18 +197,18 @@ function tll.checkTableValidation(schema, validationTable, validationString)
         end
     end
 
-    if !isValid then ErrorNoHalt(errorText) end
+    if not isValid then ErrorNoHalt(errorText) end
     return isValid
 end
 
 --- Removes all entities found by class.
 --- @param class string @Entities class name.
-function tll.removeAllByClass(class)
+function tll.RemoveAllByClass(class)
     local entities = ents.FindByClass(class)
 
     for i = 1, #entities do
         local ent = entities[i]
-        if !IsValid(ent) then continue end
+        if not IsValid(ent) then continue end
 
         ent:Remove()
     end
@@ -218,7 +218,7 @@ end
 --- @param tbl table @The table to convert to string.
 --- @param bSort bool @Whether to sort table.
 --- @return string
-function tll.tableToString(tbl, bSort)
+function tll.TableToString(tbl, bSort)
     local tempTbl = tbl
     if bSort then table.sort(tempTbl) end
 
@@ -235,29 +235,35 @@ end
 --- Loads lua file from a path.
 --- @param loadSide string | nil @Optional - SERVER, CLIENT or SHARED side.
 --- @param directoryPath string @File path.
-function tll.load(loadSide, pathToFile)
+function tll.Load(loadSide, pathToFile)
     local lowerSide = string.lower(loadSide)
+    local fileFound = file.Find(pathToFile, "LUA")
+
+    if #fileFound == 0 then
+        tll.Log("TLL", "Could not find file: ", tll.colors.path, pathToFile)
+        return
+    end
 
     if lowerSide == "server" and SERVER then
-        tll.log("TLL", "Loading file: ", tll.colors.path, pathToFile)
-        include(path)
+        tll.Log("TLL", "Loading file: ", tll.colors.path, pathToFile)
+        include(pathToFile)
     elseif lowerSide == "client" then
-        if SERVER then AddCSLuaFile(path) end
-        if CLIENT then include(path) end
+        if SERVER then AddCSLuaFile(pathToFile) end
+        if CLIENT then include(pathToFile) end
     elseif lowerSide == "shared" then
         if SERVER then
-            AddCSLuaFile(path)
-            tll.log("TLL", "Loading file: ", tll.colors.path, pathToFile)
+            AddCSLuaFile(pathToFile)
+            tll.Log("TLL", "Loading file: ", tll.colors.path, pathToFile)
         end
 
-        include(path)
+        include(pathToFile)
     end
 end
 
 --- Loads all lua files from a directory.
 --- @param loadSide string | nil @Optional - SERVER, CLIENT or SHARED side.
 --- @param directoryPath string @Directory path.
-function tll.loadFiles(loadSide, directoryPath)
+function tll.LoadFiles(loadSide, directoryPath)
     local lowerSide = loadSide and string.lower(loadSide) or nil
     local files, directories = file.Find(directoryPath .. "/*", "LUA")
 
@@ -266,7 +272,7 @@ function tll.loadFiles(loadSide, directoryPath)
         local pathToFile = directoryPath .. "/" .. fileName
 
         if (lowerSide and lowerSide == "server") and SERVER then
-            tll.log("TLL", "Loading file: ", tll.colors.path, pathToFile)
+            tll.Log("TLL", "Loading file: ", tll.colors.path, pathToFile)
             include(pathToFile)
         elseif (lowerSide and lowerSide == "client") then
             if SERVER then AddCSLuaFile(pathToFile) end
@@ -274,7 +280,7 @@ function tll.loadFiles(loadSide, directoryPath)
         elseif (lowerSide and lowerSide == "shared") then
             if SERVER then
                 AddCSLuaFile(pathToFile)
-                tll.log("TLL", "Loading file: ", tll.colors.path, pathToFile)
+                tll.Log("TLL", "Loading file: ", tll.colors.path, pathToFile)
             end
 
             include(pathToFile)
@@ -291,16 +297,16 @@ function tll.loadFiles(loadSide, directoryPath)
             local directoryFile = directoryFiles[j]
             local pathToFile = directoryPath .. "/" .. directory .. "/" .. directoryFile
 
-            if ((lowerSide and lowerSide == "server") or (!lowerSide and directory == "server")) and SERVER then
-                tll.log("TLL", "Loading file: ", tll.colors.path, pathToFile)
+            if ((lowerSide and lowerSide == "server") or (not lowerSide and directory == "server")) and SERVER then
+                tll.Log("TLL", "Loading file: ", tll.colors.path, pathToFile)
                 include(pathToFile)
-            elseif (lowerSide and lowerSide == "client") or (!lowerSide and directory == "client") then
+            elseif (lowerSide and lowerSide == "client") or (not lowerSide and directory == "client") then
                 if SERVER then AddCSLuaFile(pathToFile) end
                 if CLIENT then include(pathToFile) end
             elseif (lowerSide and lowerSide == "shared") then
                 if SERVER then
                     AddCSLuaFile(pathToFile)
-                    tll.log("TLL", "Loading file: ", tll.colors.path, pathToFile)
+                    tll.Log("TLL", "Loading file: ", tll.colors.path, pathToFile)
                 end
 
                 include(pathToFile)
@@ -318,26 +324,26 @@ if CLIENT then
     ---
     --- @param size number
     --- @return number
-    function tll.screenScale(size)
+    function tll.ScreenScale(size)
         return math.ceil(size * (ScrH() / 1080))
     end
 end
 
 if SERVER then
-    hook.Add("Initialize", "tll.checkVersion", function()
+    hook.Add("Initialize", "tll.CheckVersion", function()
         timer.Simple(0, function()
             http.Fetch("https://raw.githubusercontent.com/Tensitune/tll/master/version.txt",
                 -- success
                 function(body)
                     if (tonumber(string.Trim(body)) > version) then
-                        tll.log("TLL", tll.colors.warning, "You are not using the latest version of TLL!")
-                        tll.log("TLL", tll.colors.warning, "You can find the new version here: ", tll.colors.path, "https://github.com/Tensitune/tll")
+                        tll.Log("TLL", tll.colors.warning, "You are not using the latest version of TLL!")
+                        tll.Log("TLL", tll.colors.warning, "You can find the new version here: ", tll.colors.path, "https://github.com/Tensitune/tll")
                     end
                 end,
 
                 -- failure
                 function()
-                    tll.log("TLL", tll.colors.warning, "Failed to check version")
+                    tll.Log("TLL", tll.colors.warning, "Failed to check version")
                 end
             )
         end)
