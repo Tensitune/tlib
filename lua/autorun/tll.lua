@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 -----------------------------------------------------------------------------]]
 local version = 20230611
-if tll and tll.version > version then return end
+if tll and tll.version >= version then return end
 
 tll = tll or {}
 tll.version = version
