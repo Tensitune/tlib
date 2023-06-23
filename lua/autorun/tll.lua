@@ -20,20 +20,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 -----------------------------------------------------------------------------]]
-local version = 20230611
+local version = 20230623
 if tll and tll.version >= version then return end
 
 tll = tll or {}
 tll.version = version
-
-tll.types = {
-    ["string"] = "string",
-    ["number"] = "number",
-    ["bool"] = "boolean",
-    ["boolean"] = "boolean",
-    ["table"] = "table",
-    ["function"] = "function",
-}
 
 tll.colors = {
     primary = Color(253, 77, 89),
@@ -41,6 +32,8 @@ tll.colors = {
     white = Color(255, 255, 255),
     path = Color(210, 210, 210),
 }
+
+local math_abs = math.abs
 
 local function initFile(directoryPath, fileName)
     local prefix = string.Explode("_", string.lower(fileName))[1]
@@ -63,8 +56,7 @@ local function initFile(directoryPath, fileName)
 end
 
 --- Just a logger.
---- Accepts many arguments.
---- @param prefix string @Console message prefix
+--- Prefix is optional, accepts many arguments.
 function tll.Log(prefix, ...)
     local args = {...}
     if #args == 0 then return end
@@ -85,13 +77,11 @@ function tll.Log(prefix, ...)
 end
 
 --- Returns a plural noun.
---- @param num number @Number to check.
---- @param one string @A noun for number ending in 1.
---- @param two string @A noun for number ending in 2-4.
---- @param five string @A noun for number ending in 5+.
---- @return string
+--- one for number ending in 1.
+--- two for number ending in 2-4.
+--- five for number ending in 5+.
 function tll.GetNoun(num, one, two, five)
-    local n = math.abs(num) % 100;
+    local n = math_abs(num) % 100;
 
     if n >= 5 and n <= 20 then
         return five;
@@ -109,100 +99,7 @@ function tll.GetNoun(num, one, two, five)
     return five;
 end
 
---- Validates a table against a schema.
---- Schema example:
---- * {
---- *     schemaStr = "string",
---- *     schemaFunc = "function",
---- *     schemaMultiType = { "string", "table" }
---- *     schemaCustomCheck = function(self) return isstring(self) or istable(self) end,
---- * }
---- @param schema table @The table validation schema.
---- @param validationTable table @The table to validate.
---- @param validationString table @String what table we are validating for ErrorNoHalt.
---- @return boolean @Whether the validation succeeded.
-function tll.CheckTableValidation(schema, validationTable, validationString)
-    local stackTrace = debug.traceback()
-    local stackTraceStr = stackTrace:find("in main chunk")
-
-    stackTraceStr = string.Explode("\n\t", stackTrace:sub(1, stackTraceStr - 3))
-    stackTraceStr = stackTraceStr[#stackTraceStr]
-
-    local errorText
-
-    if type(schema) ~= "table" then
-        errorText = "[TLL Error] Schema must be a table! [" .. stackTraceStr .. "]\n"
-    end
-    if table.Count(schema) == 0 then
-        errorText = "[TLL Error] Schema must not be empty! [" .. stackTraceStr .. "]\n"
-    end
-    if type(validationTable) ~= "table" then
-        errorText = "[TLL Error] Validation table must be a table! [" .. stackTraceStr .. "]\n"
-    end
-    if table.Count(validationTable) == 0 then
-        errorText = "[TLL Error] Validation table must not be empty! [" .. stackTraceStr .. "]\n"
-    end
-
-    if errorText then
-        ErrorNoHalt(errorText)
-        return false
-    end
-
-    local isValid = true
-    errorText = ("[TLL Error] Incorrect %s! [%s]\nInvalid elements:\n"):format(validationString or "table", stackTraceStr)
-
-    for k, v in next, validationTable do
-        local schemaValue = schema[k]
-        local schemaValueType = type(schemaValue)
-        local schemaValueIsFunc = schemaValueType == "function"
-
-        local schemaTypeIsValid = false
-
-        if schemaValueType == "table" then
-            if #schemaValue == 0 then
-                ErrorNoHalt("[TLL Error] '" .. k .. "' types not found! [" .. stackTraceStr .. "]\n")
-                return false
-            end
-
-            for i = 1, #schemaValue do
-                local value = schemaValue[i]
-                local schemaType = tll.types[value]
-
-                if not schemaType then
-                    ErrorNoHalt("[TLL Error] Invalid type of '" .. k .. "'! '" .. value .. "' does not exist! [" .. stackTraceStr .. "]\n")
-                    return false
-                end
-
-                if type(v) == schemaType then
-                    schemaTypeIsValid = true
-                end
-            end
-        elseif schemaValueType == "string" then
-            local schemaType = tll.types[schemaValue]
-            if not schemaType then
-                ErrorNoHalt("[TLL Error] Invalid type of '" .. k .. "'! '" .. schemaValue .. "' does not exist! [" .. stackTraceStr .. "]\n")
-                return false
-            end
-
-            schemaTypeIsValid = type(v) == schemaType
-        end
-
-        if not schemaTypeIsValid and not (schemaValueIsFunc and schemaValue(validationTable[k])) then
-            local schemaType = schemaValueType == "table" and "(must be a " .. tll.tableToString(schemaValue) .. ")"
-                                    or schemaValueType == "function" and ""
-                                    or "(must be a " .. schemaValue .. ")"
-
-            errorText = errorText .. ("\t- %s %s\n"):format(k, schemaType)
-            isValid = false
-        end
-    end
-
-    if not isValid then ErrorNoHalt(errorText) end
-    return isValid
-end
-
 --- Removes all entities found by class.
---- @param class string @Entities class name.
 function tll.RemoveAllByClass(class)
     local entities = ents.FindByClass(class)
 
@@ -215,9 +112,6 @@ function tll.RemoveAllByClass(class)
 end
 
 --- Returns a string of table elements separated by commas.
---- @param tbl table @The table to convert to string.
---- @param bSort bool @Whether to sort table.
---- @return string
 function tll.TableToString(tbl, bSort)
     local tempTbl = tbl
     if bSort then table.sort(tempTbl) end
@@ -233,8 +127,7 @@ function tll.TableToString(tbl, bSort)
 end
 
 --- Loads lua file from a path.
---- @param loadSide string | nil @Optional - SERVER, CLIENT or SHARED side.
---- @param directoryPath string @File path.
+--- loadSide is optional: SERVER / CLIENT / SHARED / nil
 function tll.Load(loadSide, pathToFile)
     local lowerSide = string.lower(loadSide)
     local fileFound = file.Find(pathToFile, "LUA")
@@ -261,8 +154,7 @@ function tll.Load(loadSide, pathToFile)
 end
 
 --- Loads all lua files from a directory.
---- @param loadSide string | nil @Optional - SERVER, CLIENT or SHARED side.
---- @param directoryPath string @Directory path.
+--- loadSide is optional: SERVER / CLIENT / SHARED / nil
 function tll.LoadFiles(loadSide, directoryPath)
     local lowerSide = loadSide and string.lower(loadSide) or nil
     local files, directories = file.Find(directoryPath .. "/*", "LUA")
@@ -318,14 +210,104 @@ function tll.LoadFiles(loadSide, directoryPath)
 end
 
 if CLIENT then
+    local math_ceil = math.ceil
+    local math_max = math.max
+    local string_sub = string.sub
+    local string_find = string.find
+    local string_gmatch = string.gmatch
+    local surface_SetFont = surface.SetFont
+    local surface_GetTextSize = surface.GetTextSize
+    local draw_SimpleText = draw.SimpleText
+
+    local function charWrap(text, remainingWidth, maxWidth)
+        local totalWidth = 0
+
+        text = text:gsub(".", function(char)
+            totalWidth = totalWidth + surface_GetTextSize(char)
+
+            if totalWidth >= remainingWidth then
+                totalWidth = surface_GetTextSize(char)
+                remainingWidth = maxWidth
+
+                return "\n" .. char
+            end
+
+            return char
+        end)
+
+        return text, totalWidth
+    end
+
     --- Returns a number based on the size argument and your screen's height.
     --- The screen's height is always equal to size 1080.
     --- This function is primarily used for scaling font sizes.
-    ---
-    --- @param size number
-    --- @return number
     function tll.ScreenScale(size)
-        return math.ceil(size * (ScrH() / 1080))
+        return math_ceil(size * (ScrH() / 1080))
+    end
+
+    --- Draws a multiline text on screen.
+    --- xAlign and yAlign is optional (TEXT_ALIGN_LEFT and TEXT_ALIGN_TOP by default)
+    function tll.DrawMultiLineText(text, font, x, y, maxWidth, addLineHeight, color, xAlign, yAlign)
+        local curX, curY = x, y
+        surface_SetFont(font)
+
+        local spaceWidth, lineHeight = surface_GetTextSize(" ")
+        local tabWidth = 50
+
+        local totalWidth = 0
+        local wrappedText = text:gsub("(%s?[%S]+)", function(word)
+            local char = string_sub(word, 1, 1)
+            if char == "\n" or char == "\t" then
+                totalWidth = 0
+            end
+
+            local wordWidth = surface_GetTextSize(word)
+            totalWidth = totalWidth + wordWidth
+
+            if wordWidth >= maxWidth then
+                local splitWord, splitPoint = charWrap(word, maxWidth - (totalWidth - wordWidth), maxWidth)
+                totalWidth = splitPoint
+
+                return splitWord
+            elseif totalWidth < maxWidth then
+                return word
+            end
+
+            if char == " " then
+                totalWidth = wordWidth - spaceWidth
+                return "\n" .. string_sub(word, 2)
+            end
+
+            totalWidth = wordWidth
+            return "\n" .. word
+        end)
+
+        xAlign = xAlign or TEXT_ALIGN_LEFT
+        yAlign = yAlign or TEXT_ALIGN_TOP
+
+        for str in string_gmatch(wrappedText, "[^\n]*") do
+            if #str > 0 then
+                if string_find(str, "\t") then
+                    for tabs, str2 in string_gmatch(str, "(\t*)([^\t]*)") do
+                        curX = math_ceil((curX + tabWidth * math_max(#tabs - 1, 0)) / tabWidth) * tabWidth
+
+                        if #str2 > 0 then
+                            draw_SimpleText(str2, font, curX, curY, color, xAlign, yAlign)
+
+                            local w, _ = surface_GetTextSize(str2)
+                            curX = curX + w
+                        end
+                    end
+                else
+                    draw_SimpleText(str, font, curX, curY, color, xAlign, yAlign)
+                end
+            else
+                curX = x
+                curY = curY + lineHeight + addLineHeight - 4
+            end
+        end
+
+        return curY
     end
 end
 
@@ -349,3 +331,5 @@ if SERVER then
         end)
     end)
 end
+
+tll.LoadFiles(nil, "utils")
