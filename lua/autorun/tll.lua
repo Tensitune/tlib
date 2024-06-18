@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 -----------------------------------------------------------------------------]]
-local version = 20230623
+local version = 20230713
 if tll and tll.version >= version then return end
 
 tll = tll or {}
@@ -309,27 +309,6 @@ if CLIENT then
 
         return curY
     end
-end
-
-if SERVER then
-    hook.Add("Initialize", "tll.CheckVersion", function()
-        timer.Simple(0, function()
-            http.Fetch("https://raw.githubusercontent.com/Tensitune/tll/master/version.txt",
-                -- success
-                function(body)
-                    if (tonumber(string.Trim(body)) > version) then
-                        tll.Log("TLL", tll.colors.warning, "You are not using the latest version of TLL!")
-                        tll.Log("TLL", tll.colors.warning, "You can find the new version here: ", tll.colors.path, "https://github.com/Tensitune/tll")
-                    end
-                end,
-
-                -- failure
-                function()
-                    tll.Log("TLL", tll.colors.warning, "Failed to check version")
-                end
-            )
-        end)
-    end)
 end
 
 tll.LoadFiles(nil, "utils")
