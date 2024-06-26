@@ -1,2 +1,2 @@
-# Tensitune's Lightweight Library
-Tensitune's Lightweight Library for Garry's Mod
+# Tensitune's Libraries
+Tensitune's Libraries for Garry's Mod
